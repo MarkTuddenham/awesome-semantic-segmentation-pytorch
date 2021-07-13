@@ -15,6 +15,10 @@ import torch.utils.data as data
 import torch.backends.cudnn as cudnn
 
 from torchvision import transforms
+
+from orth_optim import hook
+hook()
+
 from core.data.dataloader import get_segmentation_dataset
 from core.models.model_zoo import get_segmentation_model
 from core.utils.loss import get_segmentation_loss
@@ -93,6 +97,8 @@ def parse_args():
                         help='run validation every val-epoch')
     parser.add_argument('--skip-val', action='store_true', default=False,
                         help='skip validation during training')
+    parser.add_argument('--orth','-o', action='store_true', default=False,
+                        help='Use orthogonal SGD')
     args = parser.parse_args()
 
     # default settings for epochs, batch_size and lr
@@ -179,7 +185,8 @@ class Trainer(object):
         self.optimizer = torch.optim.SGD(params_list,
                                          lr=args.lr,
                                          momentum=args.momentum,
-                                         weight_decay=args.weight_decay)
+                                         weight_decay=args.weight_decay,
+                                         orth=args.orth)
 
         # lr scheduling
         self.lr_scheduler = WarmupPolyLR(self.optimizer,
@@ -209,7 +216,7 @@ class Trainer(object):
         self.model.train()
         for iteration, (images, targets, _) in enumerate(self.train_loader):
             iteration = iteration + 1
-            self.lr_scheduler.step()
+            
 
             images = images.to(self.device)
             targets = targets.to(self.device)
@@ -226,6 +233,7 @@ class Trainer(object):
             self.optimizer.zero_grad()
             losses.backward()
             self.optimizer.step()
+            self.lr_scheduler.step()
 
             eta_seconds = ((time.time() - start_time) / iteration) * (max_iters - iteration)
             eta_string = str(datetime.timedelta(seconds=int(eta_seconds)))

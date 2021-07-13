@@ -24,7 +24,7 @@ def short_hash(name):
     return _model_sha1[name][:8]
 
 
-def get_resnet_file(name, root='~/.torch/models'):
+def get_resnet_file(name, root='~/.cache/torch/checkpoints'):
     file_name = '{name}-{short_hash}'.format(name=name, short_hash=short_hash(name))
     root = os.path.expanduser(root)
 
@@ -59,7 +59,7 @@ def get_resnet_file(name, root='~/.torch/models'):
         raise ValueError('Downloaded file has different hash. Please try again.')
 
 
-def get_model_file(name, root='~/.torch/models'):
+def get_model_file(name, root='~/.cache/torch/checkpoints'):
     root = os.path.expanduser(root)
     file_path = os.path.join(root, name + '.pth')
     if os.path.exists(file_path):
